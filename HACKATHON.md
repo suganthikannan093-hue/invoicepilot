@@ -20,7 +20,7 @@ Sources: [overview](https://paypalaihackathon.devpost.com/), [official rules](ht
 | Identify AI tools and how they're used | ✅ see description |
 | **Public repo** (GitHub/GitLab/Bitbucket) with all source | ⏳ user: push the repo and make it public |
 | **Open-source license visible in the About section** | ✅ `LICENSE` (MIT). ⏳ confirm GitHub detects it |
-| **Demo video < 3 min, public on YouTube**, shows it working, no unlicensed music/trademarks | ✅ `docs/demo.mp4` (2:27, real sandbox, no music). ⏳ user: upload to YouTube as Public |
+| **Demo video < 3 min, public on YouTube**, shows it working, no unlicensed music/trademarks | ✅ `docs/demo.mp4` (2:22, real sandbox, no music). ⏳ user: upload to YouTube as Public |
 | Testing access: creds/keys/sandbox details or how to obtain them | ✅ README explains obtaining creds; mock modes let judges run with no keys |
 | English materials | ✅ |
 | New or significantly updated during the period (1 Oct–12 Nov 2026) | ✅ built Nov 2026 |

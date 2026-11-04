@@ -4,7 +4,7 @@ Freelancers describe the work in plain English. InvoicePilot's agent drafts a st
 
 > 🔒 **Nothing goes to PayPal without your approval.** The rule is enforced on the server by single-use, content-bound approval tokens and a state machine, not just by the UI.
 
-🎬 **Demo video (2:27):** [docs/demo.mp4](docs/demo.mp4), recorded against the real PayPal Sandbox.
+🎬 **Demo video (2:22):** [docs/demo.mp4](docs/demo.mp4), recorded against the real PayPal Sandbox.
 
 ![Review screen](docs/02-review.png)
 
