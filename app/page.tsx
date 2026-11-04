@@ -36,6 +36,9 @@ export default function Home() {
   const [toast, setToast] = useState<{ msg: string; bad?: boolean }>();
   const [audit, setAudit] = useState<Audit[]>([]);
   const [rem, setRem] = useState<{ subject: string; note: string }>();
+  const [importId, setImportId] = useState("");
+  const [scan, setScan] = useState<{ scannedAt: string; results: { id: string; invoiceId?: string; client: string; status: string; daysToDue: number; bucket: string; action: string }[] }>();
+  const [live, setLive] = useState(true);
 
   const sel = recs.find((r) => r.id === selId);
   const flash = (msg: string, bad = false) => { setToast({ msg, bad }); setTimeout(() => setToast(undefined), 4000); };
@@ -46,6 +49,20 @@ export default function Home() {
   useEffect(() => { api<{ llm: string; paypal: string }>("/api/health").then(setModes); load(); }, [load]);
   useEffect(() => { setEdit(sel?.status === "DRAFTED" ? structuredClone(sel.draft) : undefined); setRem(sel?.reminder ? { ...sel.reminder } : undefined); }, [selId, sel?.status, sel?.reminder?.note]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Live status: poll PayPal every 20s for sent-but-unpaid invoices and celebrate payments.
+  useEffect(() => {
+    if (!live) return;
+    const t = setInterval(async () => {
+      const open = recs.filter((r) => r.paypal && r.status === "SENT");
+      for (const r of open) { try { const x = await api<Rec>(`/api/drafts/${r.id}/status`, { method: "POST", json: {} }); if (x.status === "PAID") { flash(`💸 Paid! ${x.draft.clientName} paid ${x.paypal?.invoiceId}`); load(); } } catch { /* next tick */ } }
+    }, 20000);
+    return () => clearInterval(t);
+  }, [live, recs, load]);
+  const kpi = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const sum = (f: (r: Rec) => boolean) => { const by: Record<string, number> = {}; let n = 0; for (const r of recs.filter(f)) { n++; by[r.draft.currency] = (by[r.draft.currency] ?? 0) + computeTotals(r.draft).total; } return { n, txt: Object.entries(by).map(([c, v]) => `${c} ${money(v, c as InvoiceDraft["currency"])}`).join(" + ") || "—" }; };
+    return { out: sum((r) => r.status === "SENT"), over: sum((r) => r.status === "SENT" && r.draft.dueDate < today), paid: sum((r) => r.status === "PAID"), draft: sum((r) => r.status === "DRAFTED" || r.status === "CREATED") };
+  }, [recs]);
   const upsert = (r: Rec) => { setRecs((xs) => [r, ...xs.filter((x) => x.id !== r.id)].sort((a, b) => b.createdAt.localeCompare(a.createdAt))); setSelId(r.id); api<Audit[]>("/api/audit").then(setAudit); };
   const run = async (label: string, fn: () => Promise<void>) => { setBusy(label); try { await fn(); } catch (e) { flash((e as Error).message, true); load(); } finally { setBusy(undefined); } };
 
@@ -96,7 +113,7 @@ export default function Home() {
         {sel && (<section className="card">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <h2>2 · Review {sel.status === "DRAFTED" ? "& edit" : ""}</h2><span className={`status ${sel.status}`}>{sel.status}</span>
-            <span className={`badge ${sel.source === "mock" ? "mock" : ""}`}>drafted by {sel.source === "openai" ? "gpt-4o-mini" : "mock parser"}</span>
+            <span className={`badge ${sel.source === "mock" ? "mock" : ""}`}>{sel.prompt.startsWith("Imported from PayPal") ? "imported from PayPal" : `drafted by ${sel.source === "openai" ? "gpt-4o-mini" : "mock parser"}`}</span>
           </div>
           <div className="steps">{["Draft", "Approve → PayPal draft", "Confirm → Send", "Collect"].map((s, i) => <span key={s} className={i + 1 === step ? "on" : i + 1 < step ? "done" : ""}>{i + 1}. {s}</span>)}</div>
           <p className="hint muted small">“{sel.prompt}”</p>
@@ -160,6 +177,23 @@ export default function Home() {
       </div>
 
       <div className="stack">
+        <section className="card">
+          <h2>Cash-flow dashboard</h2>
+          <div className="kpis" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+            {([["Outstanding", kpi.out, "#0070e0"], ["Overdue", kpi.over, "#c0392b"], ["Paid", kpi.paid, "#1a8f4a"], ["Drafts", kpi.draft, "#666"]] as const).map(([l, k, c]) => (
+              <div key={l} style={{ border: "1px solid #e3e8ef", borderRadius: 10, padding: "8px 10px" }}><div className="small muted">{l} · {k.n}</div><b style={{ color: c }}>{k.txt}</b></div>))}
+          </div>
+          <div className="actions" style={{ flexWrap: "wrap" }}>
+            <button className="primary" disabled={!!busy} onClick={() => run("scan", async () => { const s = await api<NonNullable<typeof scan>>("/api/collections", { method: "POST", json: {} }); setScan(s); await load(); flash(`Collections agent checked ${s.results.length} invoice(s)`); })}>{busy === "scan" ? "Scanning PayPal…" : "🤖 Run collections agent"}</button>
+            <label className="small"><input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /> Live PayPal status (20s)</label>
+          </div>
+          {scan && <div className="audit" style={{ marginTop: 6 }}>{scan.results.length === 0 ? <div className="muted">No open invoices.</div> : scan.results.map((r) => (
+            <div key={r.id} onClick={() => setSelId(r.id)} style={{ cursor: "pointer" }}><b>{r.client}</b> · <span className="mono">{r.invoiceId}</span> · {r.status} · <b>{r.bucket}</b> ({r.daysToDue >= 0 ? `due in ${r.daysToDue}d` : `${-r.daysToDue}d late`}) → <i>{r.action}</i></div>))}</div>}
+          <div className="actions">
+            <input aria-label="PayPal invoice ID" placeholder="Import a PayPal invoice: INV2-…" value={importId} onChange={(e) => setImportId(e.target.value)} style={{ flex: 1 }} />
+            <button disabled={!!busy || !importId.trim()} onClick={() => run("imp", async () => { const r = await api<Rec>("/api/import", { method: "POST", json: { invoiceId: importId } }); upsert(r); setImportId(""); flash(`Imported ${r.paypal?.invoiceId} (${r.paypal?.status})`); })}>⤓ Import</button>
+          </div>
+        </section>
         <section className="card">
           <div style={{ display: "flex", alignItems: "center" }}><h2>Invoices</h2><div className="grow" />
             <button className="link" disabled={!!busy} onClick={() => run("all", async () => { for (const r of recs.filter((x) => x.paypal && x.status !== "PAID")) await api(`/api/drafts/${r.id}/status`, { method: "POST", json: {} }); await load(); flash("Statuses refreshed from PayPal"); })}>↻ Refresh all</button></div>

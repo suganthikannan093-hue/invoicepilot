@@ -12,7 +12,7 @@ Sources: [overview](https://paypalaihackathon.devpost.com/), [official rules](ht
 ## Compliance checklist
 | Requirement (source) | Status |
 |---|---|
-| Integrates PayPal developer platform via sandbox (rules §4) | ✅ Invoicing v2 REST (create, send, get, remind) + `@paypal/agent-toolkit` invoice tools. ⏳ Needs a real sandbox run with your creds before recording |
+| Integrates PayPal developer platform via sandbox (rules §4) | ✅ Invoicing v2 REST (create, send, get, remind) + `@paypal/agent-toolkit` invoice tools. Verified in the sandbox: create, send, remind, import, and a PAID invoice (INV2-WVHX-G7WR-CSZQ-DQTN) |
 | Meaningful AI (rules §4) | ✅ gpt-4o-mini structured outputs for invoice extraction + reminder drafting |
 | Working prototype, not a mockup (rules §4) | ✅ end-to-end flow verified over HTTP |
 | Text description of features (submission reqs) | ✅ draft below |
@@ -20,7 +20,7 @@ Sources: [overview](https://paypalaihackathon.devpost.com/), [official rules](ht
 | Identify AI tools and how they're used | ✅ see description |
 | **Public repo** (GitHub/GitLab/Bitbucket) with all source | ⏳ user: push the repo and make it public |
 | **Open-source license visible in the About section** | ✅ `LICENSE` (MIT). ⏳ confirm GitHub detects it |
-| **Demo video < 3 min, public on YouTube**, shows it working, no unlicensed music/trademarks | ⏳ user: record and upload |
+| **Demo video < 3 min, public on YouTube**, shows it working, no unlicensed music/trademarks | ✅ `docs/demo.mp4` (2:27, real sandbox, no music). ⏳ user: upload to YouTube as Public |
 | Testing access: creds/keys/sandbox details or how to obtain them | ✅ README explains obtaining creds; mock modes let judges run with no keys |
 | English materials | ✅ |
 | New or significantly updated during the period (1 Oct–12 Nov 2026) | ✅ built Nov 2026 |

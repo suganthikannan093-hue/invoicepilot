@@ -122,3 +122,53 @@ export function editReminder(id: string, subject: string, note: string) {
 export const list = () => read((db) => db.drafts.map(view));
 export const get = (id: string) => read((db) => view(must(getDraft(db, id))));
 export const auditLog = (id?: string) => read((db) => db.audit.filter((a) => !id || a.draftId === id).slice(0, 100));
+
+const mapStatus = (s: string): DraftRecord["status"] =>
+  s === "PAID" || s === "MARKED_AS_PAID" ? "PAID" : s === "CANCELLED" ? "CANCELLED" : s === "DRAFT" ? "CREATED" : "SENT";
+
+/** Read-only: pull an existing PayPal invoice (by INV2-… id) into the dashboard so the agent can track it. */
+export async function importFromPayPal(invoiceId: string) {
+  const id = invoiceId.trim().toUpperCase();
+  const gw = gateway();
+  if (gw.mode === "mock") throw new ApprovalError("Import needs PayPal sandbox credentials", 409);
+  const existing = read((db) => db.drafts.find((d) => d.paypal?.invoiceId === id));
+  if (existing) return refreshStatus(existing.id);
+  const { fetchInvoice } = await import("./paypal/rest");
+  const { fromPayPalInvoice } = await import("./paypal/payload");
+  const inv = await fetchInvoice(id);
+  return tx((db) => {
+    const rec: DraftRecord = { id: newId(), prompt: `Imported from PayPal ${id}`, draft: fromPayPalInvoice(inv), assumptions: [], source: "mock", status: mapStatus(inv.status),
+      paypal: { invoiceId: id, status: inv.status, mode: gw.mode, payerViewUrl: inv.detail?.metadata?.recipient_view_url, lastCheckedAt: now() }, remindersSent: 0, createdAt: now(), updatedAt: now() };
+    db.drafts.unshift(rec);
+    audit(db, { actor: "user", action: "paypal.import", draftId: rec.id, detail: `${id} → ${inv.status}` });
+    return view(rec);
+  });
+}
+
+const daysUntil = (iso: string, today = new Date()) => Math.round((Date.parse(iso + "T00:00:00Z") - Date.parse(today.toISOString().slice(0, 10) + "T00:00:00Z")) / 86400000);
+
+/**
+ * Collections agent: refresh every open invoice from PayPal, classify it (paid / overdue / due soon / open),
+ * and draft an AI reminder for overdue or due-within-3-days invoices. It never sends anything:
+ * each reminder still needs the user's single-use approval. LLM calls are capped per run.
+ */
+export async function collectionsScan(opts: { maxDrafts?: number; today?: Date } = {}) {
+  const maxDrafts = opts.maxDrafts ?? 3;
+  const open = read((db) => db.drafts.filter((d) => d.paypal && (d.status === "SENT" || d.status === "CREATED")).map((d) => d.id));
+  const results: { id: string; invoiceId?: string; client: string; status: string; daysToDue: number; bucket: string; action: string }[] = [];
+  let drafted = 0;
+  for (const id of open) {
+    let rec;
+    try { rec = await refreshStatus(id); } catch (e) { results.push({ id, client: "?", status: "ERROR", daysToDue: 0, bucket: "error", action: (e as Error).message.slice(0, 120) }); continue; }
+    const d = daysUntil(rec.draft.dueDate, opts.today);
+    const bucket = rec.status === "PAID" ? "paid" : rec.status !== "SENT" ? "not-sent" : d < 0 ? "overdue" : d <= 3 ? "due-soon" : "open";
+    let action = bucket === "paid" ? "marked paid" : "no action";
+    if ((bucket === "overdue" || bucket === "due-soon") && !rec.reminder) {
+      if (drafted < maxDrafts) { await makeReminder(id, bucket === "overdue" && rec.remindersSent > 0 ? "firm" : "friendly"); drafted++; action = "reminder drafted, awaiting your approval"; }
+      else action = "reminder skipped (per-run AI cap)";
+    } else if (rec.reminder) action = "reminder already waiting for approval";
+    results.push({ id, invoiceId: rec.paypal?.invoiceId, client: rec.draft.clientName, status: rec.paypal?.status ?? rec.status, daysToDue: d, bucket, action });
+  }
+  tx((db) => audit(db, { actor: "agent", action: "collections.scan", detail: `${results.length} checked; ${drafted} reminder(s) drafted; ${results.filter((r) => r.bucket === "paid").length} paid` }));
+  return { scannedAt: now(), results };
+}

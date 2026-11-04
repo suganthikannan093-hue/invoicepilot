@@ -4,6 +4,8 @@ Freelancers describe the work in plain English. InvoicePilot's agent drafts a st
 
 > 🔒 **Nothing goes to PayPal without your approval.** The rule is enforced on the server by single-use, content-bound approval tokens and a state machine, not just by the UI.
 
+🎬 **Demo video (2:27):** [docs/demo.mp4](docs/demo.mp4), recorded against the real PayPal Sandbox.
+
 ![Review screen](docs/02-review.png)
 
 ## Features
@@ -11,6 +13,9 @@ Freelancers describe the work in plain English. InvoicePilot's agent drafts a st
 - **Editable review**: every field can be edited, with live validation, minor-unit totals (no float drift) and tax.
 - **Human-in-the-loop PayPal writes**: *Approve → create PayPal DRAFT* → *Confirm → send to client* → *Approve → send reminder*. Each is a separate explicit confirm.
 - **Collections**: status refresh per invoice or for all, plus AI reminder drafting with tone that escalates with each reminder sent, editable before sending.
+- **🤖 Collections agent**: one click refreshes every open invoice from PayPal, classifies each one as paid, overdue, due soon or open, and drafts AI reminders for overdue and due-soon invoices. The reminders are queued for your approval and never sent automatically. AI calls are capped per run (`POST /api/collections`).
+- **Cash-flow dashboard + live status**: Outstanding, Overdue, Paid and Drafts totals per currency. Sent invoices are polled from PayPal every 20 s, and a toast appears the moment one is paid.
+- **Import any PayPal invoice** by `INV2-…` ID (read-only Invoicing v2 GET, `POST /api/import`) so the agent can track invoices you created elsewhere.
 - **Audit log** of every agent draft, user approval, guard block and PayPal call.
 - **Runs with zero keys**: an offline mock parser and a clearly labelled **mock PayPal** mode (IDs `INV2-MOCK-…`).
 

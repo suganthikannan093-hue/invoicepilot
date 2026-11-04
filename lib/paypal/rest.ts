@@ -55,3 +55,14 @@ export const restGateway: PayPalGateway = {
     await call("POST", `/v2/invoicing/invoices/${encodeURIComponent(id)}/remind`, { subject, note, send_to_invoicer: true }, crypto.randomUUID());
   },
 };
+
+/** Full invoice read (used to import an existing PayPal invoice into InvoicePilot). Read-only. */
+export async function fetchInvoice(id: string) {
+  if (!/^INV2-[A-Z0-9-]{4,40}$/.test(id)) throw new Error("Not a PayPal invoice ID (expected INV2-…)");
+  return call<PayPalFullInvoice>("GET", `/v2/invoicing/invoices/${encodeURIComponent(id)}`);
+}
+export type PayPalFullInvoice = Inv & {
+  detail?: { currency_code?: string; note?: string; payment_term?: { due_date?: string }; metadata?: { recipient_view_url?: string } };
+  primary_recipients?: { billing_info?: { name?: { given_name?: string; surname?: string; full_name?: string }; email_address?: string } }[];
+  items?: { name: string; description?: string; quantity?: string; unit_amount?: { value?: string }; unit_of_measure?: string; tax?: { percent?: string } }[];
+};
