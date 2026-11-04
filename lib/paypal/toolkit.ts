@@ -23,7 +23,16 @@ async function run(name: string, args: Record<string, unknown>): Promise<unknown
 export const toolkitGateway: PayPalGateway = {
   mode: "sandbox-agent-toolkit",
   createDraft: (b) => restGateway.createDraft(b),
-  async send(id) { await run("send_invoice", { invoice_id: id, send_to_recipient: true }); return this.getStatus(id); },
+  async send(id) {
+    const out = await run("send_invoice", { invoice_id: id, send_to_recipient: true });
+    const st = await this.getStatus(id);
+    // The toolkit returns PayPal errors as tool output instead of throwing; never report a failed send as success.
+    if (st.status === "DRAFT") {
+      const msg = typeof out === "string" ? out : JSON.stringify(out);
+      throw new Error(`PayPal send_invoice via Agent Toolkit did not send ${id}: ${msg.slice(0, 400)}`);
+    }
+    return st;
+  },
   async getStatus(id): Promise<PayPalInvoiceRef> {
     const r = (await run("get_invoice", { invoice_id: id })) as { id?: string; status?: string; detail?: { metadata?: { recipient_view_url?: string } } };
     if (!r || typeof r !== "object" || !r.status) return restGateway.getStatus(id);
