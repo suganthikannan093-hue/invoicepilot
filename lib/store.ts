@@ -99,7 +99,12 @@ export function storeKind(): "redis" | "file" {
   return redisConfigured() ? "redis" : "file";
 }
 
-const file = () => process.env.SPENDGUARD_DB ?? process.env.INVOICEPILOT_DB ?? path.join(process.cwd(), "data", "db.json");
+function defaultFile() {
+  // Vercel/Lambda: the function filesystem is read-only except /tmp.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) return "/tmp/spendguard-db.json";
+  return path.join(process.cwd(), "data", "db.json");
+}
+const file = () => process.env.SPENDGUARD_DB ?? process.env.INVOICEPILOT_DB ?? defaultFile();
 
 export function empty(): DB {
   return { drafts: [], purchases: [], policy: null, audit: [], approvals: [] };

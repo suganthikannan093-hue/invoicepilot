@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+data
+.paypal_sandbox_accounts
+docs/demo-frames
+docs/*.mp4
