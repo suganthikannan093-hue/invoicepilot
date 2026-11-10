@@ -35,7 +35,7 @@ type OrderBody = {
 
 function refFrom(order: OrderBody, fallbackId?: string): PayPalOrderRef {
   const captures = order.purchase_units?.[0]?.payments?.captures ?? [];
-  const approve = order.links?.find((l) => l.rel === "approve")?.href;
+  const approve = order.links?.find((l) => l.rel === "approve" || l.rel === "payer-action")?.href;
   return {
     orderId: order.id ?? fallbackId ?? "",
     status: order.status ?? "CREATED",
@@ -148,12 +148,19 @@ async function run(name: string, args: Record<string, unknown>): Promise<unknown
   try { return JSON.parse(c); } catch { return c; }
 }
 
+const ORDER_OK = new Set(["CREATED", "SAVED", "APPROVED", "PAYER_ACTION_REQUIRED", "COMPLETED", "VOIDED", "AUTHORIZING", "CAPTURED"]);
+
 function unwrapOrder(out: unknown, fallbackId?: string): PayPalOrderRef {
   if (out && typeof out === "object") {
     const o = out as Record<string, unknown>;
+    const httpStatus = typeof o.status === "number" ? o.status : undefined;
+    if (o.ok === false || o.status === "error" || (httpStatus !== undefined && httpStatus >= 400)) {
+      const msg = typeof o.message === "string" ? o.message : JSON.stringify(o.response ?? o).slice(0, 240);
+      throw new Error(`PayPal Agent Toolkit order error (${httpStatus ?? o.code ?? "error"}): ${msg}`);
+    }
     // pay_order wraps as { status: "success", response: {...} }
     const inner = (o.response && typeof o.response === "object") ? o.response as OrderBody : o as OrderBody;
-    if (inner.id || inner.status) return refFrom(inner, fallbackId);
+    if (inner.id || (inner.status && ORDER_OK.has(String(inner.status)))) return refFrom(inner, fallbackId);
   }
   throw new Error(`PayPal Agent Toolkit returned an unexpected order payload: ${String(out).slice(0, 240)}`);
 }
@@ -161,20 +168,9 @@ function unwrapOrder(out: unknown, fallbackId?: string): PayPalOrderRef {
 /** Agent Toolkit create_order only accepts USD; other currencies fall back to REST. */
 export const toolkitOrdersGateway: OrdersGateway = {
   mode: "sandbox-agent-toolkit",
-  async create(input) {
-    if (input.currency !== "USD") return restOrdersGateway.create(input);
-    try {
-      const out = await run("create_order", {
-        currencyCode: "USD",
-        items: [{ name: input.item.slice(0, 127), quantity: 1, description: input.merchant ?? "SpendGuard", itemCost: input.amount, itemTotal: input.amount, taxPercent: 0 }],
-        returnUrl: process.env.SPENDGUARD_PUBLIC_URL ? `${process.env.SPENDGUARD_PUBLIC_URL}/spend/return` : "https://example.com/spendguard/return",
-        cancelUrl: process.env.SPENDGUARD_PUBLIC_URL ? `${process.env.SPENDGUARD_PUBLIC_URL}/spend/cancel` : "https://example.com/spendguard/cancel",
-      });
-      return unwrapOrder(out);
-    } catch {
-      return restOrdersGateway.create(input);
-    }
-  },
+  // REST create so we control application_context and always get an approve / payer-action link.
+  // get + capture still go through the Agent Toolkit (with REST fallback).
+  async create(input) { return restOrdersGateway.create(input); },
   async get(orderId) {
     try { return unwrapOrder(await run("get_order", { id: orderId }), orderId); }
     catch { return restOrdersGateway.get(orderId); }
