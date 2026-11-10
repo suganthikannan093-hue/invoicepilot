@@ -48,7 +48,7 @@ flowchart LR
 | Audit chain | `lib/audit.ts` | SHA-256 hash chain, verify, exportable receipt |
 | Orders | `lib/paypal/orders.ts` | REST `api-m.sandbox.paypal.com` /v2/checkout/orders, optional Agent Toolkit, labelled mock |
 | Invoices | `lib/paypal/*` | REST + `@paypal/agent-toolkit` invoice tools |
-| Store | `lib/store.ts` | File store for local/tests (`data/db.json` or `SPENDGUARD_DB`). Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set. On Vercel without Redis, the file store uses `/tmp`. |
+| Store | `lib/store.ts` | File store for local/tests (`data/db.json` or `SPENDGUARD_DB`). Upstash Redis when `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` or the Vercel Marketplace aliases `KV_REST_API_URL`/`KV_REST_API_TOKEN` are set. On Vercel without Redis, the file store uses `/tmp`. |
 
 ## Setup
 Requirements: Node 20+ and pnpm.
@@ -84,7 +84,7 @@ Set `OPENAI_API_KEY` (model `gpt-4o-mini` by default). Without it, a determinist
 | `MOCK_PAYPAL_AUTOPAY` | No | Mock invoicing only: flip SENT → PAID after a few status checks. |
 | `SPENDGUARD_PUBLIC_URL` | No | Public base URL used as the PayPal order return/cancel URL. |
 | `SPENDGUARD_DB` | No | Override JSON file-store path. Falls back to `INVOICEPILOT_DB`, then `data/db.json` (or `/tmp/spendguard-db.json` on Vercel). |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | No | When both are set, the store uses Upstash Redis instead of a file. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | No | When both are set, the store uses Upstash Redis instead of a file. The Vercel Marketplace aliases `KV_REST_API_URL` / `KV_REST_API_TOKEN` also work. |
 
 ## Scripts
 ```bash
@@ -104,7 +104,7 @@ pnpm dev
 Live app: [https://spendguard-suganthikannan093.vercel.app](https://spendguard-suganthikannan093.vercel.app). See [HACKATHON.md](HACKATHON.md) and `docs/spendguard-demo-script.md` for the video script.
 
 ## Hosting
-Production runs on **Vercel** (hobby plan) at the URL above. Set `OPENAI_API_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, and `SPENDGUARD_PUBLIC_URL` in the Vercel project. For a durable store across serverless invocations, accept the Upstash marketplace terms and add the free Redis integration (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`). Without Redis, the file store uses `/tmp` and resets when the instance is recycled.
+Production runs on **Vercel** (hobby plan) at the URL above. Set `OPENAI_API_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, and `SPENDGUARD_PUBLIC_URL` in the Vercel project. Production uses a free-tier Upstash Redis store (`spendguard-redis`) connected through the Vercel Marketplace. The Marketplace injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`; the app also accepts `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`. Without Redis, the file store uses `/tmp` and resets when the instance is recycled.
 
 ## License
 MIT. See [LICENSE](LICENSE).

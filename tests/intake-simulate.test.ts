@@ -11,7 +11,7 @@ const saved: Record<string, string | undefined> = {};
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "spendguard-"));
-  for (const k of ["SPENDGUARD_DB", "INVOICEPILOT_DB", "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "OPENAI_API_KEY", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) {
+  for (const k of ["SPENDGUARD_DB", "INVOICEPILOT_DB", "PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "OPENAI_API_KEY", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_URL", "KV_REST_API_TOKEN"]) {
     saved[k] = process.env[k];
   }
   process.env.SPENDGUARD_DB = path.join(dir, "db.json");
@@ -21,6 +21,8 @@ beforeEach(() => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
 });
 
 afterEach(() => {

@@ -91,8 +91,16 @@ export interface DB {
 const REDIS_KEY = () => process.env.SPENDGUARD_REDIS_KEY ?? "spendguard:db";
 const LOCK_KEY = () => `${REDIS_KEY()}:lock`;
 
+/** Vercel Marketplace Upstash Redis injects KV_REST_API_*; Redis.fromEnv() wants UPSTASH_REDIS_*. */
+export function redisCredentials(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (url && token) return { url, token };
+  return null;
+}
+
 export function redisConfigured(): boolean {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  return redisCredentials() !== null;
 }
 
 export function storeKind(): "redis" | "file" {
@@ -151,8 +159,10 @@ function getRedis(): RedisClient {
   // Lazy require so local/tests without the package still run if we only use the file store.
   // The dependency is declared in package.json for production.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Redis } = require("@upstash/redis") as { Redis: { fromEnv: () => RedisClient } };
-  _redis = Redis.fromEnv();
+  const creds = redisCredentials();
+  if (!creds) throw new Error("Redis is not configured");
+  const { Redis } = require("@upstash/redis") as { Redis: new (opts: { url: string; token: string }) => RedisClient };
+  _redis = new Redis(creds);
   return _redis;
 }
 
