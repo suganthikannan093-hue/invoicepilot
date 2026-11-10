@@ -156,11 +156,11 @@ type RedisClient = {
 let _redis: RedisClient | null | undefined;
 function getRedis(): RedisClient {
   if (_redis) return _redis;
+  const creds = redisCredentials();
+  if (!creds) throw new Error("Redis is not configured");
   // Lazy require so local/tests without the package still run if we only use the file store.
   // The dependency is declared in package.json for production.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const creds = redisCredentials();
-  if (!creds) throw new Error("Redis is not configured");
   const { Redis } = require("@upstash/redis") as { Redis: new (opts: { url: string; token: string }) => RedisClient };
   _redis = new Redis(creds);
   return _redis;
