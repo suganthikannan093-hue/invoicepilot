@@ -1,0 +1,168 @@
+{
+  "duration": 167.64,
+  "captionWindowsFinal": [
+    {
+      "start": 3.8,
+      "stop": 16.74,
+      "label": "The problem  \u00b7  sourced facts"
+    },
+    {
+      "start": 16.74,
+      "stop": 32.15,
+      "label": "What is new  \u00b7  both directions, bound approvals"
+    },
+    {
+      "start": 32.15,
+      "stop": 45.88,
+      "label": "Plain-English policy  \u00b7  dry-run then compile"
+    },
+    {
+      "start": 45.88,
+      "stop": 54.09,
+      "label": "Hold  \u00b7  Northline icon pack"
+    },
+    {
+      "start": 54.09,
+      "stop": 62.4,
+      "label": "No token, no PayPal  \u00b7  403"
+    },
+    {
+      "start": 62.4,
+      "stop": 79.04,
+      "label": "Approve this exact order"
+    },
+    {
+      "start": 79.04,
+      "stop": 80.28,
+      "label": "PayPal sandbox  \u00b7  Orders v2"
+    },
+    {
+      "start": 80.28,
+      "stop": 102.28,
+      "label": "PayPal sandbox login  \u00b7  email hidden"
+    },
+    {
+      "start": 102.28,
+      "stop": 114.6,
+      "label": "Blocked  \u00b7  gift card"
+    },
+    {
+      "start": 114.6,
+      "stop": 124.8,
+      "label": "Prompt injection blocked"
+    },
+    {
+      "start": 124.8,
+      "stop": 139.0,
+      "label": "Bill  \u00b7  money in"
+    },
+    {
+      "start": 139.0,
+      "stop": 142.6,
+      "label": "PayPal invoice created"
+    },
+    {
+      "start": 142.6,
+      "stop": 154.1,
+      "label": "Invoice Intake  \u00b7  poisoned notes blocked"
+    },
+    {
+      "start": 154.1,
+      "stop": 160.0,
+      "label": "Hash-chained audit  \u00b7  verify"
+    },
+    {
+      "start": 160.0,
+      "stop": 172.64,
+      "label": "Tech  \u00b7  Design  \u00b7  Impact  \u00b7  Innovation"
+    }
+  ],
+  "evidenceFrames": [
+    {
+      "file": "01-opening.png",
+      "t": 1.8,
+      "label": "SpendGuard title"
+    },
+    {
+      "file": "02-hook.png",
+      "t": 10.27,
+      "label": "The problem  \u00b7  sourced facts"
+    },
+    {
+      "file": "03-novelty.png",
+      "t": 24.45,
+      "label": "What is new  \u00b7  both directions, bound approvals"
+    },
+    {
+      "file": "04-policy.png",
+      "t": 39.02,
+      "label": "Plain-English policy  \u00b7  dry-run then compile"
+    },
+    {
+      "file": "05-allowed.png",
+      "t": 52.5,
+      "label": "Hold  \u00b7  Northline icon pack"
+    },
+    {
+      "file": "06-no_token.png",
+      "t": 61.8,
+      "label": "No token, no PayPal  \u00b7  403"
+    },
+    {
+      "file": "07-approve.png",
+      "t": 69.78,
+      "label": "Approve this exact order"
+    },
+    {
+      "file": "08-paypal.png",
+      "t": 79.66,
+      "label": "PayPal sandbox  \u00b7  Orders v2"
+    },
+    {
+      "file": "09-paypal_login.png",
+      "t": 91.28,
+      "label": "PayPal sandbox login  \u00b7  email hidden"
+    },
+    {
+      "file": "10-blocked.png",
+      "t": 109.5,
+      "label": "Blocked  \u00b7  gift card"
+    },
+    {
+      "file": "11-injection.png",
+      "t": 119.5,
+      "label": "Prompt injection blocked"
+    },
+    {
+      "file": "12-bill.png",
+      "t": 128.78,
+      "label": "Bill  \u00b7  money in"
+    },
+    {
+      "file": "13-bill_result.png",
+      "t": 137.0,
+      "label": "PayPal invoice created"
+    },
+    {
+      "file": "14-intake.png",
+      "t": 147.5,
+      "label": "Invoice Intake  \u00b7  poisoned notes blocked"
+    },
+    {
+      "file": "15-audit.png",
+      "t": 155.5,
+      "label": "Hash-chained audit  \u00b7  verify"
+    },
+    {
+      "file": "16-close.png",
+      "t": 161.2,
+      "label": "Tech  \u00b7  Design  \u00b7  Impact  \u00b7  Innovation"
+    },
+    {
+      "file": "17-closing.png",
+      "t": 166.8,
+      "label": "Closing card"
+    }
+  ],
+  "notes": "Caption windows were shifted after a first-pass midpoint check so the 403 banner, gift-card block, and prompt-injection decision sit under the matching labels."
+}
