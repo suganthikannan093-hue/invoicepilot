@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { handle } from "@/lib/http";
 import { finalizePurchase } from "@/lib/spend/service";
 type P = { params: Promise<{ id: string }> };

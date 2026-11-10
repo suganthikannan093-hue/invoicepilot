@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { handle } from "@/lib/http";
 import { approvePurchase } from "@/lib/spend/service";
 import { ApprovalError } from "@/lib/approval";

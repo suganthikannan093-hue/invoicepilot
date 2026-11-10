@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@paypal/agent-toolkit": "^1.11.0",
+    "@upstash/redis": "^1.41.0",
     "next": "15.5.28",
     "openai": "^7.47.0",
     "react": "19.1.0",

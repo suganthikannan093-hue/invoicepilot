@@ -1,6 +1,7 @@
 import type { Category } from "./policy/schema";
 
-/** Mock merchant catalog. Only PayPal is real; these listings exist so the agent can plan a purchase. */
+/** Mock merchant catalog. Only PayPal is real; these listings exist so the agent can plan a purchase.
+ *  Names are original (no trademarked flagship merchants) so the demo can be shown in a public video. */
 export interface CatalogItem {
   merchant: string;
   item: string;
@@ -11,19 +12,18 @@ export interface CatalogItem {
 }
 
 export const CATALOG: CatalogItem[] = [
-  { merchant: "Figma", item: "Figma Professional seat", category: "software", amount: 16, currency: "USD", aliases: ["figma seat", "figma professional", "renew figma", "figma"] },
-  { merchant: "Figma", item: "Figma icon pack", category: "design", amount: 35, currency: "USD", aliases: ["icon pack", "figma icon", "icons"] },
-  { merchant: "Adobe", item: "Adobe Creative Cloud", category: "software", amount: 55, currency: "USD", aliases: ["adobe", "creative cloud"] },
-  { merchant: "Notion", item: "Notion Plus", category: "software", amount: 20, currency: "USD", aliases: ["notion plus", "notion"] },
-  { merchant: "GitHub", item: "GitHub Team seat", category: "software", amount: 22, currency: "USD", aliases: ["github", "github team"] },
-  { merchant: "Creative Market", item: "Design toolkit", category: "design", amount: 29, currency: "USD", aliases: ["creative market", "design toolkit"] },
-  { merchant: "Amazon", item: "Amazon Gift Card", category: "gift_card", amount: 200, currency: "USD", aliases: ["amazon gift card", "gift card", "giftcard"] },
-  { merchant: "Coinbase", item: "Bitcoin purchase", category: "crypto", amount: 100, currency: "USD", aliases: ["coinbase", "bitcoin", "crypto"] },
+  { merchant: "Northline Studio", item: "Northline design seat", category: "software", amount: 16, currency: "USD", aliases: ["northline seat", "northline studio seat", "design seat", "northline studio"] },
+  { merchant: "Northline Studio", item: "Northline icon pack", category: "design", amount: 35, currency: "USD", aliases: ["icon pack", "northline icon", "icons"] },
+  { merchant: "Ledgerly", item: "Ledgerly Plus", category: "software", amount: 20, currency: "USD", aliases: ["ledgerly plus", "ledgerly"] },
+  { merchant: "Forge Labs", item: "Forge Labs team seat", category: "software", amount: 22, currency: "USD", aliases: ["forge labs", "forge team", "forge"] },
+  { merchant: "Paperplane", item: "Paperplane design toolkit", category: "design", amount: 29, currency: "USD", aliases: ["paperplane", "design toolkit"] },
+  { merchant: "Giftly", item: "Giftly gift card", category: "gift_card", amount: 200, currency: "USD", aliases: ["giftly", "gift card", "giftcard", "gift cards"] },
+  { merchant: "Coinlane", item: "Coinlane crypto purchase", category: "crypto", amount: 100, currency: "USD", aliases: ["coinlane", "bitcoin", "crypto"] },
 ];
 
 export function matchCatalog(text: string): CatalogItem | undefined {
   const t = text.toLowerCase();
-  // Prefer the longest alias match so "figma icon pack" wins over "figma".
+  // Prefer the longest alias match so "northline icon pack" wins over "northline studio".
   let best: { item: CatalogItem; len: number } | undefined;
   for (const item of CATALOG) {
     for (const alias of item.aliases) {
