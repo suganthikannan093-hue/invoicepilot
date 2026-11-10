@@ -5,6 +5,8 @@ import { computeTotals, money } from "./totals";
 import { issueApproval, consumeApproval, contentHash, ApprovalError, type WriteAction } from "./approval";
 import { gateway } from "./paypal";
 import { toPayPalInvoice } from "./paypal/payload";
+import { getOrInitPolicy, peekPolicy } from "./policy/service";
+import { evaluateBill } from "./policy/engine";
 
 export function view(rec: DraftRecord) {
   const v = InvoiceDraftSchema.safeParse(rec.draft);
@@ -17,7 +19,15 @@ export function view(rec: DraftRecord) {
 }
 const must = (r: DraftRecord | undefined) => { if (!r) throw new ApprovalError("Draft not found", 404); return r; };
 
-export function modes() { return { llm: llmMode(), paypal: gateway().mode }; }
+export function modes() { const policy = peekPolicy(); return { llm: llmMode(), paypal: gateway().mode, product: "SpendGuard", policyCompiled: Boolean(policy) }; }
+
+
+async function assertBillPolicy(rec: DraftRecord) {
+  const policyRec = peekPolicy() ?? await getOrInitPolicy();
+  const totals = computeTotals(rec.draft);
+  const decision = evaluateBill({ policy: policyRec.compiled, invoice: { total: totals.total, currency: rec.draft.currency } });
+  return decision;
+}
 
 export async function createDraftFromText(prompt: string) {
   if (!prompt.trim() || prompt.length > 4000) throw new ApprovalError("Describe the work (1–4000 chars)", 400);
@@ -25,7 +35,7 @@ export async function createDraftFromText(prompt: string) {
   return tx((db) => {
     const rec: DraftRecord = { id: newId(), prompt, draft: r.draft, assumptions: r.assumptions, source: r.source, status: "DRAFTED", remindersSent: 0, createdAt: now(), updatedAt: now() };
     db.drafts.unshift(rec);
-    audit(db, { actor: "agent", action: "draft.generated", draftId: rec.id, detail: `${r.source}; ${r.draft.items.length} item(s)` });
+    audit(db, { actor: "agent", action: "draft.generated", draftId: rec.id, direction: "bill", detail: `${r.source}; ${r.draft.items.length} item(s)` });
     return view(rec);
   });
 }
@@ -36,26 +46,42 @@ export function updateDraft(id: string, patch: unknown) {
     if (rec.status !== "DRAFTED") throw new ApprovalError("Only un-submitted drafts can be edited", 409);
     rec.draft = patch as DraftRecord["draft"];
     rec.updatedAt = now();
-    audit(db, { actor: "user", action: "draft.edited", draftId: id });
+    audit(db, { actor: "user", action: "draft.edited", draftId: id, direction: "bill" });
     return view(rec);
   });
 }
 
-export function approve(id: string, action: WriteAction, hash: string) {
+export async function approve(id: string, action: WriteAction, hash: string) {
+  if (action === "create") {
+    const rec = read((db) => must(getDraft(db, id)));
+    const decision = await assertBillPolicy(rec);
+    if (decision.outcome === "block") {
+      tx((db) => audit(db, { actor: "system", action: "policy.blocked.bill", draftId: id, direction: "bill", detail: decision.reasons.join(" ") }));
+      throw new ApprovalError(decision.reasons.join(" "), 409);
+    }
+  }
   return tx((db) => {
     const rec = must(getDraft(db, id));
     const token = issueApproval(db, rec, action, hash);
-    audit(db, { actor: "user", action: `approval.${action}`, draftId: id, detail: "single-use token issued (10 min)" });
+    audit(db, { actor: "user", action: `approval.${action}`, draftId: id, direction: "bill", detail: "single-use token issued (10 min)" });
     return { token };
   });
 }
 
 /** The only path to a PayPal write: consume approval (sync, persisted) → call PayPal → record. */
 export async function execute(id: string, action: WriteAction, token: string | undefined) {
+  if (action === "create") {
+    const rec = read((db) => must(getDraft(db, id)));
+    const decision = await assertBillPolicy(rec);
+    if (decision.outcome === "block") {
+      tx((db) => audit(db, { actor: "system", action: "policy.blocked.bill", draftId: id, direction: "bill", detail: decision.reasons.join(" ") }));
+      throw new ApprovalError(decision.reasons.join(" "), 409);
+    }
+  }
   const out = tx((db) => {
     const r = must(getDraft(db, id));
     try { consumeApproval(db, r, action, token); }
-    catch (e) { audit(db, { actor: "system", action: `guard.blocked.${action}`, draftId: id, detail: (e as Error).message }); return { err: e as Error }; }
+    catch (e) { audit(db, { actor: "system", action: `guard.blocked.${action}`, draftId: id, direction: "bill", detail: (e as Error).message }); return { err: e as Error }; }
     return { rec: structuredClone(r) };
   });
   if ("err" in out) throw out.err;
@@ -73,11 +99,11 @@ export async function execute(id: string, action: WriteAction, token: string | u
       if (action === "send") r.status = "SENT";
       if (action === "remind") { r.remindersSent++; r.reminder = undefined; }
       r.updatedAt = now();
-      audit(db, { actor: "system", action: `paypal.${action}`, draftId: id, detail: `${gw.mode} ${ref.invoiceId} → ${ref.status}` });
+      audit(db, { actor: "system", action: `paypal.${action}`, draftId: id, direction: "bill", detail: `${gw.mode} ${ref.invoiceId} → ${ref.status}` });
       return view(r);
     });
   } catch (e) {
-    tx((db) => audit(db, { actor: "system", action: `paypal.${action}.failed`, draftId: id, detail: (e as Error).message.slice(0, 300) }));
+    tx((db) => audit(db, { actor: "system", action: `paypal.${action}.failed`, draftId: id, direction: "bill", detail: (e as Error).message.slice(0, 300) }));
     throw e;
   }
 }
@@ -91,7 +117,7 @@ export async function refreshStatus(id: string) {
     r.paypal = { ...r.paypal!, status: ref.status, lastCheckedAt: now() };
     if (ref.status === "PAID" || ref.status === "MARKED_AS_PAID") r.status = "PAID";
     if (ref.status === "CANCELLED") r.status = "CANCELLED";
-    audit(db, { actor: "system", action: "paypal.status", draftId: id, detail: ref.status });
+    audit(db, { actor: "system", action: "paypal.status", draftId: id, direction: "bill", detail: ref.status });
     return view(r);
   });
 }
@@ -104,7 +130,7 @@ export async function makeReminder(id: string, tone?: "friendly" | "firm") {
   return tx((db) => {
     const x = must(getDraft(db, id));
     x.reminder = { subject: r.subject, note: r.note, source: r.source, createdAt: now() };
-    audit(db, { actor: "agent", action: "reminder.drafted", draftId: id, detail: r.source });
+    audit(db, { actor: "agent", action: "reminder.drafted", draftId: id, direction: "bill", detail: r.source });
     return view(x);
   });
 }
@@ -114,7 +140,7 @@ export function editReminder(id: string, subject: string, note: string) {
     const x = must(getDraft(db, id));
     if (!x.reminder) throw new ApprovalError("No reminder draft", 409);
     x.reminder = { ...x.reminder, subject: subject.slice(0, 200), note: note.slice(0, 2000) };
-    audit(db, { actor: "user", action: "reminder.edited", draftId: id });
+    audit(db, { actor: "user", action: "reminder.edited", draftId: id, direction: "bill" });
     return view(x);
   });
 }
@@ -140,7 +166,7 @@ export async function importFromPayPal(invoiceId: string) {
     const rec: DraftRecord = { id: newId(), prompt: `Imported from PayPal ${id}`, draft: fromPayPalInvoice(inv), assumptions: [], source: "mock", status: mapStatus(inv.status),
       paypal: { invoiceId: id, status: inv.status, mode: gw.mode, payerViewUrl: inv.detail?.metadata?.recipient_view_url, lastCheckedAt: now() }, remindersSent: 0, createdAt: now(), updatedAt: now() };
     db.drafts.unshift(rec);
-    audit(db, { actor: "user", action: "paypal.import", draftId: rec.id, detail: `${id} → ${inv.status}` });
+    audit(db, { actor: "user", action: "paypal.import", draftId: rec.id, direction: "bill", detail: `${id} → ${inv.status}` });
     return view(rec);
   });
 }
@@ -169,6 +195,6 @@ export async function collectionsScan(opts: { maxDrafts?: number; today?: Date }
     } else if (rec.reminder) action = "reminder already waiting for approval";
     results.push({ id, invoiceId: rec.paypal?.invoiceId, client: rec.draft.clientName, status: rec.paypal?.status ?? rec.status, daysToDue: d, bucket, action });
   }
-  tx((db) => audit(db, { actor: "agent", action: "collections.scan", detail: `${results.length} checked; ${drafted} reminder(s) drafted; ${results.filter((r) => r.bucket === "paid").length} paid` }));
+  tx((db) => audit(db, { actor: "agent", action: "collections.scan", direction: "bill", detail: `${results.length} checked; ${drafted} reminder(s) drafted; ${results.filter((r) => r.bucket === "paid").length} paid` }));
   return { scannedAt: now(), results };
 }

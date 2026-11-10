@@ -54,7 +54,7 @@ export function mockParse(text: string, today = new Date()): { raw: Record<strin
 }
 
 let client: OpenAI | null = null;
-const openai = () => (client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 30_000, maxRetries: 2 }));
+export const getOpenAI = () => (client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 30_000, maxRetries: 2 }));
 
 const SYSTEM = (today: string) => `You turn a freelancer's plain-English description of work into a structured invoice draft.
 Today is ${today}. Rules:
@@ -74,7 +74,7 @@ export async function parseInvoice(text: string, today = new Date()): Promise<Pa
     const n = normalise(m.raw, today);
     return { ...n, assumptions: m.assumptions, source: "mock" };
   }
-  const res = await openai().chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: MODEL, temperature: 0, max_tokens: 1200,
     response_format: { type: "json_schema", json_schema: invoiceJsonSchema as never },
     messages: [{ role: "system", content: SYSTEM(t) }, { role: "user", content: `<work>${text}</work>` }],
@@ -97,7 +97,7 @@ export function mockReminder(i: ReminderInput, today = new Date()) {
 
 export async function draftReminder(i: ReminderInput, today = new Date()): Promise<{ subject: string; note: string; source: "openai" | "mock" }> {
   if (llmMode() === "mock") return { ...mockReminder(i, today), source: "mock" };
-  const res = await openai().chat.completions.create({
+  const res = await getOpenAI().chat.completions.create({
     model: MODEL, temperature: 0.4, max_tokens: 400,
     response_format: { type: "json_schema", json_schema: { name: "reminder", strict: true, schema: { type: "object", additionalProperties: false, required: ["subject", "note"], properties: { subject: { type: "string" }, note: { type: "string" } } } } },
     messages: [

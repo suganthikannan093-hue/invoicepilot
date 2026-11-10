@@ -9,3 +9,5 @@ export function gateway(): PayPalGateway {
   return process.env.PAYPAL_USE_AGENT_TOOLKIT === "false" ? restGateway : toolkitGateway;
 }
 export type { PayPalGateway };
+export { ordersGateway } from "./orders";
+export type { OrdersGateway, PayPalOrderRef } from "./orders";

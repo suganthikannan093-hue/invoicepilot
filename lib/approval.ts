@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { DB, DraftRecord, DraftStatus } from "./store";
+import type { DB, DraftRecord, DraftStatus, PurchaseRecord } from "./store";
 import { InvoiceDraftSchema } from "./schema";
 
 /** Every PayPal write the app can perform. */
@@ -54,5 +54,38 @@ export function consumeApproval(db: DB, rec: DraftRecord, action: WriteAction, t
   if (a.expiresAt <= at) throw new ApprovalError("Approval expired; approve again");
   if (a.draftId !== rec.id || a.action !== action) throw new ApprovalError("Approval token is for a different action");
   if (a.contentHash !== contentHash(rec, action)) throw new ApprovalError("Draft changed after approval; approve again");
+  a.used = true;
+}
+
+
+export type SpendAction = "capture";
+
+/** Hash of the exact purchase the user saw and approved. */
+export function purchaseContentHash(rec: Pick<PurchaseRecord, "item" | "merchant" | "amount" | "currency" | "category">): string {
+  return crypto.createHash("sha256").update("capture" + JSON.stringify({ item: rec.item, merchant: rec.merchant, amount: rec.amount, currency: rec.currency, category: rec.category })).digest("hex");
+}
+
+export function issueSpendApproval(db: DB, rec: PurchaseRecord, clientHash: string, at = Date.now()): string {
+  if (rec.status !== "PROPOSED") throw new ApprovalError(`Cannot capture a purchase in state ${rec.status}`, 409);
+  if (rec.decision.outcome === "block") throw new ApprovalError("This purchase was blocked by policy", 409);
+  const h = purchaseContentHash(rec);
+  if (clientHash !== h) throw new ApprovalError("What you approved differs from the saved purchase. Reload and review again.", 409);
+  const token = crypto.randomBytes(24).toString("base64url");
+  db.approvals = db.approvals.filter((a) => a.expiresAt > at && !a.used);
+  db.approvals.push({ tokenHash: sha(token), draftId: rec.id, action: "capture", contentHash: h, expiresAt: at + TTL_MS, used: false });
+  return token;
+}
+
+/** Guard in front of every PayPal Orders capture. Consumes the token. Missing token → 403. */
+export function consumeSpendApproval(db: DB, rec: PurchaseRecord, token: string | undefined, at = Date.now()) {
+  if (!token) throw new ApprovalError("Missing approval token: nothing goes to PayPal without your approval");
+  if (rec.status !== "PROPOSED") throw new ApprovalError(`Cannot capture a purchase in state ${rec.status}`, 409);
+  if (rec.decision.outcome === "block") throw new ApprovalError("This purchase was blocked by policy", 409);
+  const a = db.approvals.find((x) => x.tokenHash === sha(token));
+  if (!a) throw new ApprovalError("Unknown approval token");
+  if (a.used) throw new ApprovalError("Approval token already used");
+  if (a.expiresAt <= at) throw new ApprovalError("Approval expired; approve again");
+  if (a.draftId !== rec.id || a.action !== "capture") throw new ApprovalError("Approval token is for a different action");
+  if (a.contentHash !== purchaseContentHash(rec)) throw new ApprovalError("Purchase changed after approval; approve again");
   a.used = true;
 }

@@ -1,52 +1,48 @@
-# ✈️ InvoicePilot: AI invoice & collections agent
+# SpendGuard
 
-Freelancers describe the work in plain English. InvoicePilot's agent drafts a structured invoice, you review and edit it, and **only after your explicit approval** is it created in PayPal (Invoicing API v2). Later the agent checks status and drafts payment reminders, which again go out only when you approve them.
+One guard that lets an AI agent safely move a small business's money **in both directions** through PayPal.
 
-> 🔒 **Nothing goes to PayPal without your approval.** The rule is enforced on the server by single-use, content-bound approval tokens and a state machine, not just by the UI.
+- **Spend** (lead): the agent proposes a purchase; a plain-English spending policy is compiled into structured rules and enforced on the server; allowed buys can be completed; blocked buys are refused with a reason. Money moves through PayPal **Orders v2** (create and capture) only after a single-use, content-hash-bound approval token is presented.
+- **Bill**: the same guard, the same policy file and the same audit log sit in front of PayPal **Invoicing v2**. Describe the work in plain English, review the draft, and approve it. The existing invoice state machine still applies: `DRAFTED → CREATED → SENT → PAID`.
 
-🎬 **Demo video (2:26, narrated):** [docs/demo.mp4](docs/demo.mp4), recorded against the real PayPal Sandbox.
-
-![Review screen](docs/02-review.png)
+> 🔒 **The agent never holds PayPal credentials.** The server is the only path to PayPal. A prompt injection can at worst propose a purchase, never make one. Calling the capture endpoint without a valid approval token returns **403**.
 
 ## Features
-- **Natural language → invoice**: OpenAI `gpt-4o-mini` with strict JSON-schema structured outputs, validated again with Zod. The agent lists its *assumptions* (for example a missing email) for you to check.
-- **Editable review**: every field can be edited, with live validation, minor-unit totals (no float drift) and tax.
-- **Human-in-the-loop PayPal writes**: *Approve → create PayPal DRAFT* → *Confirm → send to client* → *Approve → send reminder*. Each is a separate explicit confirm.
-- **Collections**: status refresh per invoice or for all, plus AI reminder drafting with tone that escalates with each reminder sent, editable before sending.
-- **🤖 Collections agent**: one click refreshes every open invoice from PayPal, classifies each one as paid, overdue, due soon or open, and drafts AI reminders for overdue and due-soon invoices. The reminders are queued for your approval and never sent automatically. AI calls are capped per run (`POST /api/collections`).
-- **Cash-flow dashboard + live status**: Outstanding, Overdue, Paid and Drafts totals per currency. Sent invoices are polled from PayPal every 20 s, and a toast appears the moment one is paid.
-- **Import any PayPal invoice** by `INV2-…` ID (read-only Invoicing v2 GET, `POST /api/import`) so the agent can track invoices you created elsewhere.
-- **Audit log** of every agent draft, user approval, guard block and PayPal call.
-- **Runs with zero keys**: an offline mock parser and a clearly labelled **mock PayPal** mode (IDs `INV2-MOCK-…`).
+- **Policy as code, written in plain English.** OpenAI `gpt-4o-mini` compiles your rules into strict JSON, validated with Zod. Example: max $40/day, software and design only, never gift cards or crypto, over $25 needs your approval, merchant allowlist. Invoices share the same file (always need approval; cap at $10,000 by default).
+- **Spend agent.** Plans a purchase (item, merchant, amount, category) against a mock catalog. The policy engine decides `allow`, `needs_approval` or `block`, with a human-readable reason.
+- **Prompt-injection guard.** Untrusted product-page or tool output is treated as data. If it tries to override the policy, the purchase is blocked even when the surface item looks allowed.
+- **Human-in-the-loop PayPal writes.** Single-use, 10-minute approval tokens bound to the SHA-256 of the exact purchase or invoice you saw. Editing after approval invalidates the token. Missing token → 403.
+- **PayPal sandbox, both directions.** Orders v2 (create, get, capture) for spend; Invoicing v2 (create, send, get, remind) plus the official **PayPal Agent Toolkit** for invoice tools (and order tools when the toolkit is enabled).
+- **Unified audit log** of every policy decision, approval, guard block and PayPal call, tagged spend or bill.
+- **Bill tab** keeps the invoice reviewer, cash-flow dashboard, collections agent and PayPal invoice import.
+- **Runs with zero keys:** an offline mock policy compiler and purchase planner, plus a clearly labelled **mock PayPal** (order IDs `ORD-MOCK-…`, invoice IDs `INV2-MOCK-…`).
 
 ## Architecture
 ```mermaid
 flowchart LR
-  U[Freelancer] -->|plain English| UI[Next.js UI app/page.tsx]
-  UI -->|POST /api/drafts| API[Next.js API routes]
-  API --> LLM[lib/llm.ts<br/>OpenAI structured outputs + Zod<br/>mock fallback]
-  API --> ST[(data/db.json<br/>drafts · approvals · audit)]
-  UI -->|explicit Approve click<br/>POST /approve confirm:true + contentHash| G[lib/approval.ts<br/>approval guard + state machine]
-  G -->|single-use token| UI
-  UI -->|POST /execute X-Approval-Token| API
+  U[You] -->|plain-English policy + "buy this"| UI[Next.js UI]
+  UI -->|compile / propose| API[Next.js API]
+  API --> LLM[lib/llm + lib/policy/compiler + lib/spend/plan<br/>gpt-4o-mini structured outputs + Zod]
+  API --> POL[lib/policy/engine<br/>allow / block / needs_approval / injection]
+  UI -->|Approve + content hash| G[lib/approval.ts<br/>single-use 10-min tokens]
+  G -->|X-Approval-Token| API
   API -->|consume token| G
-  G -->|ok| PP[lib/paypal<br/>gateway]
-  PP -->|creds missing| MOCK[mock PayPal]
-  PP -->|create| REST[REST client<br/>OAuth token cache<br/>api-m.sandbox.paypal.com]
-  PP -->|get / send / remind| TK[@paypal/agent-toolkit<br/>invoice tools]
-  REST & TK --> PAYPAL[(PayPal Sandbox<br/>Invoicing v2)]
+  G -->|ok, spend| ORD[PayPal Orders v2<br/>create + capture]
+  G -->|ok, bill| INV[PayPal Invoicing v2<br/>REST + Agent Toolkit]
+  API --> ST[(data/db.json<br/>policy · purchases · invoices · audit)]
 ```
 
 | Layer | Path | Notes |
 |---|---|---|
-| Schema | `lib/schema.ts` | Zod `InvoiceDraftSchema` plus a matching strict JSON schema for OpenAI |
-| Totals | `lib/totals.ts` | integer minor units, zero-decimal currencies (JPY) |
-| LLM | `lib/llm.ts` | `parseInvoice`, `draftReminder`; prompt treats user text as data; deterministic `mockParse` |
-| Approval guard | `lib/approval.ts` | state machine `DRAFTED→CREATED→SENT→PAID`; tokens are random, stored hashed, single use, expire after 10 min, and are bound to draft id + action + SHA-256 of the exact content approved |
-| PayPal | `lib/paypal/*` | `rest.ts` (OAuth client-credentials, cached until 60s before expiry, `PayPal-Request-Id` idempotency), `toolkit.ts` (official Agent Toolkit `get_invoice`/`send_invoice`/`send_invoice_reminder`), `mock.ts`, `payload.ts` (draft → Invoicing v2 body) |
-| Service | `lib/service.ts` | the only code path to PayPal writes: `execute()` consumes approval → calls the gateway → records |
-| API | `app/api/**` | `drafts`, `drafts/[id]`, `[id]/approve`, `[id]/execute`, `[id]/status`, `[id]/reminder`, `audit`, `health` |
-| Store | `lib/store.ts` | atomic JSON file (`data/db.json`, git-ignored) |
+| Policy schema | `lib/policy/schema.ts` | Zod `PolicySchema` + JSON schema for OpenAI |
+| Compiler | `lib/policy/compiler.ts` | `compilePolicy` / deterministic `mockCompilePolicy` |
+| Engine | `lib/policy/engine.ts` | Spend and bill decisions, injection detector, daily cap |
+| Approval guard | `lib/approval.ts` | Invoice actions `create` / `send` / `remind`; spend action `capture`. Tokens are random, stored hashed, single use, expire after 10 min, bound to id + action + SHA-256 of the exact content |
+| Spend service | `lib/spend/service.ts` | The only path to Orders v2 writes: policy check → consume approval → create → capture |
+| Bill service | `lib/service.ts` | The only path to Invoicing v2 writes: same guard, same policy, same audit log |
+| Orders | `lib/paypal/orders.ts` | REST `api-m.sandbox.paypal.com` /v2/checkout/orders, optional Agent Toolkit `create_order` / `get_order` / `pay_order`, labelled mock |
+| Invoices | `lib/paypal/*` | Existing REST + `@paypal/agent-toolkit` invoice tools |
+| Store | `lib/store.ts` | Atomic JSON file (`data/db.json`, git-ignored). Override path with `SPENDGUARD_DB` |
 
 ## Setup
 Requirements: Node 20+ and pnpm.
@@ -57,31 +53,51 @@ pnpm dev                     # http://localhost:3000
 ```
 
 ### PayPal sandbox credentials
+The same sandbox app is used for Orders v2 and Invoicing v2.
+
 1. Sign in at <https://developer.paypal.com/> (a free PayPal account works).
-2. **Testing Tools → Sandbox Accounts**: a default *Business* (merchant) and *Personal* (buyer) account are created for you. Use the Personal account's email as the client email to see the invoice arrive in the sandbox.
+2. **Testing Tools → Sandbox Accounts**: a default *Business* (merchant) and *Personal* (buyer) account are created for you. Use the Personal account when a spend needs payer approval, and as the invoice recipient email.
 3. **Apps & Credentials** → make sure the toggle says **Sandbox** → **Create App** (Merchant type, linked to the sandbox business account).
 4. Copy the **Client ID** and **Secret** into `.env.local` as `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, then restart `pnpm dev`. The header badge changes from **PayPal: MOCK** to **Sandbox**.
-5. To see the invoices, log in to <https://www.sandbox.paypal.com/> with the sandbox business account.
+5. To inspect orders and invoices, log in to <https://www.sandbox.paypal.com/> with the sandbox business (and, for payer approval, personal) account.
 
 The app only ever talks to `api-m.sandbox.paypal.com`. Secrets are read from env vars and never logged or returned by any API.
 
+If a sandbox capture is refused because the buyer has not yet approved the order, the UI shows the PayPal approve link and a **Capture now** button. Mock mode completes the order immediately.
+
 ### OpenAI
-Set `OPENAI_API_KEY` (model `gpt-4o-mini` by default, about $0.001 per draft). Without it, a deterministic regex parser drafts invoices and the UI says so.
+Set `OPENAI_API_KEY` (model `gpt-4o-mini` by default). Without it, a deterministic compiler and planner are used, and the UI says so.
+
+### Environment variables
+| Variable | Required? | Purpose |
+|---|---|---|
+| `OPENAI_API_KEY` | No | Policy compiler, purchase planner, invoice parser, reminder writer. Mock fallback if unset. |
+| `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini`. |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | No | Sandbox app credentials. Mock PayPal if unset. |
+| `PAYPAL_USE_AGENT_TOOLKIT` | No | Default `true`. Set `false` to use REST only. |
+| `MOCK_PAYPAL_AUTOPAY` | No | Mock invoicing only: flip SENT → PAID after a few status checks. |
+| `SPENDGUARD_PUBLIC_URL` | No | Public base URL used as the PayPal order return/cancel URL (e.g. a Render host). |
+| `SPENDGUARD_DB` | No | Override JSON store path. Falls back to `INVOICEPILOT_DB`, then `data/db.json`. |
 
 ## Scripts
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm dev
 ```
-`vitest` covers parsing and normalisation, the schema rules, the PayPal payload mapping, totals and the approval guard (missing, replayed, expired, cross-action and post-edit tokens, the state machine and invalid drafts).
+`vitest` covers policy compilation, spend decisions (allow / block / needs-approval / injection / 403 without a token), invoice parsing, totals, payload mapping and the approval guard (missing, replayed, expired, cross-action and post-edit tokens, the state machine and invalid drafts).
 
 ## Safety design
-- **The agent can't write to PayPal.** The LLM only returns JSON. Every PayPal write goes through `service.execute()`, which first consumes a server-issued approval token.
-- **You approve what you saw.** The approve call must send the content hash the UI rendered. If the stored draft differs, approval is refused, and editing after approval invalidates the token.
-- **Two-step send**: creating in PayPal makes a DRAFT invoice only. Emailing the client is a second, separate confirm, and reminders are a third.
-- **State machine** blocks out-of-order or repeated writes (for example create twice, or remind before send).
-- **Prompt-injection hygiene**: user text is fenced as data, outputs are schema-constrained and re-validated, and assumptions are surfaced, never silently invented (no fabricated emails).
-- **Audit log** records guard blocks as well as successes.
-- **Mock modes are labelled** in the UI, the API (`/api/health`) and invoice IDs.
+- **The agent can't write to PayPal.** The LLM only returns JSON (a policy, a purchase plan, or an invoice draft). Every PayPal write goes through a service that first consumes a server-issued approval token, and spend is also refused when the policy says `block`.
+- **You approve what you saw.** The approve call must send the content hash the UI rendered. If the stored purchase or draft differs, approval is refused.
+- **Prompt-injection hygiene.** User text and untrusted product-page output are fenced as data. The policy engine blocks override attempts even if the planner extracted an otherwise-allowed item.
+- **Audit log** records guard blocks as well as successes, in both directions.
+- **Mock modes are labelled** in the UI, the API (`/api/health`) and PayPal IDs.
 
-## Demo flow
-See [HACKATHON.md](HACKATHON.md) for the 2–3 minute video script. Screenshots are in [`docs/`](docs/).
+## Demo
+See [HACKATHON.md](HACKATHON.md) for a script under 2:45 that leads with spending and shows invoicing in about 30 seconds.
+
+## Hosting on Render (suggested, not applied here)
+A Web Service built from this repo, Node 20, build `pnpm install && pnpm build`, start `pnpm start`. Attach a **persistent disk** mounted at `/data` and set `SPENDGUARD_DB=/data/db.json` so the JSON store survives deploys (the default `data/db.json` lives on an ephemeral filesystem). Set `OPENAI_API_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, and `SPENDGUARD_PUBLIC_URL` to the public `https://…onrender.com` URL. Optional: `PAYPAL_USE_AGENT_TOOLKIT=true`. This also qualifies the project for the Render sponsor prize if the demo is served from there.
+
+## License
+MIT. See [LICENSE](LICENSE).

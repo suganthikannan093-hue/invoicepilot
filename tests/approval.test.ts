@@ -4,7 +4,7 @@ import type { DB, DraftRecord } from "@/lib/store";
 const rec = (): DraftRecord => ({ id: "drf_1", prompt: "", source: "mock", assumptions: [], status: "DRAFTED", remindersSent: 0, createdAt: "", updatedAt: "",
   draft: { clientName: "A", clientEmail: "a@b.co", currency: "USD", taxPercent: 0, dueDate: "2026-12-01", notes: "", items: [{ name: "x", description: "", quantity: 1, unitPrice: 10, unit: "AMOUNT" }] } });
 let db: DB; let r: DraftRecord;
-beforeEach(() => { db = { drafts: [], audit: [], approvals: [] }; r = rec(); db.drafts.push(r); });
+beforeEach(() => { db = { drafts: [], purchases: [], policy: null, audit: [], approvals: [] }; r = rec(); db.drafts.push(r); });
 describe("approval guard", () => {
   it("blocks writes with no token", () => { expect(() => consumeApproval(db, r, "create", undefined)).toThrow(/without your approval/); });
   it("allows exactly once with a valid token", () => {

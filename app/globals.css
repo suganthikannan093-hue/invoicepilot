@@ -41,3 +41,27 @@ td.num,th.num{text-align:right}.tot{margin-left:auto;width:280px;margin-top:10px
 .audit{max-height:220px;overflow:auto;font-size:12px}.audit div{padding:3px 0;border-bottom:1px dashed var(--line)}
 .steps{display:flex;gap:6px;margin:6px 0 2px;font-size:12px}.steps span{padding:3px 8px;border-radius:6px;background:#eef1f6;color:var(--muted)}.steps span.on{background:var(--blue);color:#fff}.steps span.done{background:#e6f6ee;color:var(--ok)}
 @media(max-width:1000px){main{grid-template-columns:1fr}}
+.safety.warn{background:#fff4e0;color:#8a5200;border-color:#ffd99a}
+.tabs{display:flex;gap:0;padding:0 28px;background:#fff;border-bottom:1px solid var(--line);max-width:1500px;margin:0 auto;width:100%}
+.tabs button{border:0;background:none;border-radius:0;padding:12px 18px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--blue)}
+.compiled{margin-top:12px;background:#0f1b33;color:#e8eefc;border-radius:12px;padding:12px 14px;overflow:auto}
+.compiled-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#fff}
+.compiled pre{margin:0;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+.budget-row{display:flex;align-items:baseline;gap:8px;font-size:22px;margin:4px 0 10px}
+.meter{height:8px;background:#e3e8f2;border-radius:99px;overflow:hidden}
+.meter span{display:block;height:100%;background:linear-gradient(90deg,#0b57d0,#0f8a4b)}
+.decision.ok{box-shadow:inset 3px 0 0 var(--ok)}
+.decision.warn{box-shadow:inset 3px 0 0 var(--warn)}
+.decision.bad{box-shadow:inset 3px 0 0 var(--bad)}
+.reasons{margin:8px 0 0 18px;padding:0}
+.status.allow,.status.COMPLETED,.status.needs{background:#e6f6ee;color:var(--ok)}
+.status.needs_approval{background:#fff4e0;color:#8a5200}
+.status.block,.status.BLOCKED,.status.FAILED{background:#fdecec;color:var(--bad)}
+.status.PROPOSED,.status.AWAITING_PAYER{background:#e8efff;color:#0b57d0}
+.dir{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:#eef3ff;color:var(--navy)}
+.dir.spend{background:#e6f6ee;color:var(--ok)}
+.dir.bill{background:#e8efff;color:#0b57d0}
+a.btn-like{display:inline-flex;align-items:center;font:inherit;font-weight:600;border-radius:9px;padding:8px 14px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none}
+.chip.danger{background:#fdecec;border-color:#f5c2c4;color:var(--bad)}
+main.spend,main.bill{/* same grid as main */}
