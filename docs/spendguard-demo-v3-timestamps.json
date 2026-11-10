@@ -1,0 +1,303 @@
+{
+  "duration": 170.28,
+  "captionWindows": [
+    {
+      "id": "hook",
+      "label": "The problem  \u00b7  sourced facts",
+      "start": 0.19999999999999973,
+      "stop": 13.139999999999999,
+      "mid": 6.669999999999999,
+      "finalStart": 3.8,
+      "finalStop": 16.74,
+      "finalMid": 10.27
+    },
+    {
+      "id": "novelty",
+      "label": "What is new  \u00b7  both directions, bound approvals",
+      "start": 13.139999999999999,
+      "stop": 28.549999999999997,
+      "mid": 20.845,
+      "finalStart": 16.74,
+      "finalStop": 32.15,
+      "finalMid": 24.45
+    },
+    {
+      "id": "policy",
+      "label": "Plain-English policy  \u00b7  dry-run then compile",
+      "start": 28.549999999999997,
+      "stop": 40.48,
+      "mid": 34.515,
+      "finalStart": 32.15,
+      "finalStop": 44.08,
+      "finalMid": 38.11
+    },
+    {
+      "id": "allowed",
+      "label": "Hold  \u00b7  Northline icon pack",
+      "start": 40.48,
+      "stop": 48.69,
+      "mid": 44.584999999999994,
+      "finalStart": 44.08,
+      "finalStop": 52.29,
+      "finalMid": 48.19
+    },
+    {
+      "id": "no_token",
+      "label": "No token, no PayPal  \u00b7  403",
+      "start": 48.69,
+      "stop": 55.12,
+      "mid": 51.905,
+      "finalStart": 52.29,
+      "finalStop": 58.72,
+      "finalMid": 55.5
+    },
+    {
+      "id": "approve",
+      "label": "Approve this exact order",
+      "start": 55.12,
+      "stop": 64.09,
+      "mid": 59.605000000000004,
+      "finalStart": 58.72,
+      "finalStop": 67.69,
+      "finalMid": 63.2
+    },
+    {
+      "id": "paypal",
+      "label": "PayPal sandbox  \u00b7  Orders v2",
+      "start": 64.09,
+      "stop": 71.9,
+      "mid": 67.995,
+      "finalStart": 67.69,
+      "finalStop": 75.5,
+      "finalMid": 71.59
+    },
+    {
+      "id": "paypal_login",
+      "label": "PayPal sandbox login  \u00b7  email hidden",
+      "start": 71.9,
+      "stop": 81.4,
+      "mid": 76.65,
+      "finalStart": 75.5,
+      "finalStop": 85.0,
+      "finalMid": 80.25
+    },
+    {
+      "id": "paypal_checkout",
+      "label": "PayPal sandbox  \u00b7  Complete Purchase",
+      "start": 81.4,
+      "stop": 93.4,
+      "mid": 87.4,
+      "finalStart": 85.0,
+      "finalStop": 97.0,
+      "finalMid": 91.0
+    },
+    {
+      "id": "paypal_done",
+      "label": "PayPal capture  \u00b7  COMPLETED",
+      "start": 93.4,
+      "stop": 103.9,
+      "mid": 98.65,
+      "finalStart": 97.0,
+      "finalStop": 107.5,
+      "finalMid": 102.25
+    },
+    {
+      "id": "blocked",
+      "label": "Blocked  \u00b7  gift card",
+      "start": 103.9,
+      "stop": 112.9,
+      "mid": 108.4,
+      "finalStart": 107.5,
+      "finalStop": 116.5,
+      "finalMid": 112.0
+    },
+    {
+      "id": "injection",
+      "label": "Prompt injection blocked",
+      "start": 112.9,
+      "stop": 120.4,
+      "mid": 116.65,
+      "finalStart": 116.5,
+      "finalStop": 124.0,
+      "finalMid": 120.25
+    },
+    {
+      "id": "bill",
+      "label": "Bill  \u00b7  money in",
+      "start": 120.4,
+      "stop": 129.4,
+      "mid": 124.9,
+      "finalStart": 124.0,
+      "finalStop": 133.0,
+      "finalMid": 128.5
+    },
+    {
+      "id": "bill_result",
+      "label": "PayPal invoice created",
+      "start": 129.4,
+      "stop": 133.9,
+      "mid": 131.65,
+      "finalStart": 133.0,
+      "finalStop": 137.5,
+      "finalMid": 135.25
+    },
+    {
+      "id": "intake",
+      "label": "Invoice Intake  \u00b7  poisoned notes blocked",
+      "start": 133.9,
+      "stop": 142.9,
+      "mid": 138.4,
+      "finalStart": 137.5,
+      "finalStop": 146.5,
+      "finalMid": 142.0
+    },
+    {
+      "id": "audit",
+      "label": "Hash-chained audit  \u00b7  verify",
+      "start": 142.9,
+      "stop": 147.6,
+      "mid": 145.25,
+      "finalStart": 146.5,
+      "finalStop": 151.2,
+      "finalMid": 148.85
+    },
+    {
+      "id": "close",
+      "label": "Tech  \u00b7  Design  \u00b7  Impact  \u00b7  Innovation",
+      "start": 147.6,
+      "stop": 160.68,
+      "mid": 154.14,
+      "finalStart": 151.2,
+      "finalStop": 164.28,
+      "finalMid": 157.74
+    }
+  ],
+  "frames": [
+    {
+      "file": "01-opening.png",
+      "id": "opening",
+      "label": "SpendGuard title",
+      "t": 1.8
+    },
+    {
+      "file": "02-hook.png",
+      "id": "hook",
+      "label": "The problem  \u00b7  sourced facts",
+      "t": 10.27
+    },
+    {
+      "file": "03-novelty.png",
+      "id": "novelty",
+      "label": "What is new  \u00b7  both directions, bound approvals",
+      "t": 24.45
+    },
+    {
+      "file": "04-policy.png",
+      "id": "policy",
+      "label": "Plain-English policy  \u00b7  dry-run then compile",
+      "t": 38.12
+    },
+    {
+      "file": "05-allowed.png",
+      "id": "allowed",
+      "label": "Hold  \u00b7  Northline icon pack",
+      "t": 48.19
+    },
+    {
+      "file": "06-no_token.png",
+      "id": "no_token",
+      "label": "No token, no PayPal  \u00b7  403",
+      "t": 55.51
+    },
+    {
+      "file": "07-approve.png",
+      "id": "approve",
+      "label": "Approve this exact order",
+      "t": 63.21
+    },
+    {
+      "file": "08-paypal.png",
+      "id": "paypal",
+      "label": "PayPal sandbox  \u00b7  Orders v2",
+      "t": 72.0
+    },
+    {
+      "file": "09-paypal_login.png",
+      "id": "paypal_login",
+      "label": "PayPal sandbox login  \u00b7  email hidden",
+      "t": 80.0
+    },
+    {
+      "file": "10-paypal_checkout.png",
+      "id": "paypal_checkout",
+      "label": "PayPal sandbox  \u00b7  Complete Purchase",
+      "t": 90.0
+    },
+    {
+      "file": "11-paypal_done.png",
+      "id": "paypal_done",
+      "label": "PayPal capture  \u00b7  COMPLETED",
+      "t": 98.0
+    },
+    {
+      "file": "12-blocked.png",
+      "id": "blocked",
+      "label": "Blocked  \u00b7  gift card",
+      "t": 112.0
+    },
+    {
+      "file": "13-injection.png",
+      "id": "injection",
+      "label": "Prompt injection blocked",
+      "t": 122.0
+    },
+    {
+      "file": "14-bill.png",
+      "id": "bill",
+      "label": "Bill  \u00b7  money in",
+      "t": 128.0
+    },
+    {
+      "file": "15-bill_result.png",
+      "id": "bill_result",
+      "label": "PayPal invoice created",
+      "t": 134.5
+    },
+    {
+      "file": "16-intake.png",
+      "id": "intake",
+      "label": "Invoice Intake  \u00b7  poisoned notes blocked",
+      "t": 142.0
+    },
+    {
+      "file": "17-audit.png",
+      "id": "audit",
+      "label": "Hash-chained audit  \u00b7  verify",
+      "t": 148.0
+    },
+    {
+      "file": "18-close.png",
+      "id": "close",
+      "label": "Tech  \u00b7  Design  \u00b7  Impact  \u00b7  Innovation",
+      "t": 154.0
+    },
+    {
+      "file": "19-closing.png",
+      "id": "closing",
+      "label": "Closing card",
+      "t": 167.28
+    }
+  ],
+  "alignment": "visual, after midpoint audit of the muxed cut",
+  "outcome": {
+    "paypalOrder": "6EP281419N641845E",
+    "paypalStatus": "COMPLETED",
+    "paypalCapture": "22233677FR8284502",
+    "payerApproved": true,
+    "invoiceId": "INV2-B2VG-KXP8-DM37-8ZVH",
+    "invoiceStatus": "DRAFT",
+    "invoiceSent": false,
+    "notes": []
+  },
+  "notes": "Captions remuxed so gift-card is never labelled prompt injection; PayPal login email is hidden; capture COMPLETED is captioned only once COMPLETED is on screen."
+}

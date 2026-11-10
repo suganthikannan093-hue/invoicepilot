@@ -8,7 +8,7 @@ Paste and adapt these sections on Devpost. Do not submit from this document. Eve
 - Alternate production alias: https://spendguard-mu.vercel.app
 - Repo (SpendGuard is the default branch): https://github.com/suganthikannan093-hue/invoicepilot
 - Branch URL: https://github.com/suganthikannan093-hue/invoicepilot/tree/spendguard
-- Demo video: upload `/workspace/spendguard-demo-v2.mp4` to YouTube as **Public**, under 3:00 (this cut is 2:47).
+- Demo video: upload `/workspace/spendguard-demo-v3.mp4` to YouTube as **Public**, under 3:00 (this cut is 2:50). Recorded against the live Vercel URL with a completed sandbox capture.
 
 An older Render URL, https://spendguard-mand.onrender.com, is still running on the free plan and should not be the judging link.
 
@@ -43,9 +43,9 @@ Next.js 15, TypeScript, Zod, OpenAI `gpt-4o-mini`, PayPal Orders v2, Invoicing v
 
 ### Technological Implementation
 
-The live app talks to the PayPal sandbox with the official Agent Toolkit: `GET /api/health` reports `llm: openai` and `paypal: sandbox-agent-toolkit`. A verified walk through the production URL this turn compiled a policy with source `openai`, held a $35 Northline purchase, returned **403** without a token, created sandbox order `60A954372M859873M`, and created sandbox invoice `INV2-B6K3-6EHS-GH6B-MVZZ`. The demo recording created a second sandbox order `68A87028LN3359022` and invoice `INV2-9PCY-W4SM-APA5-7RE5`. The suite covers policy decisions, Invoice Intake, dry-run, the hash chain, and approval-token failures (missing, replayed, expired, wrong content).
+The live app talks to the PayPal sandbox with the official Agent Toolkit and stores state in a free-tier Upstash Redis (`spendguard-redis`) connected through the Vercel Marketplace. `GET /api/health` reports `llm: openai`, `paypal: sandbox-agent-toolkit`, and `store: redis`. A verified walk through the production URL compiled a policy with source `openai`, held a $35 Northline purchase, returned **403** without a token, created and captured sandbox order `8WY64249NN645770A` (capture `2YJ872930E0316642`, COMPLETED), created sandbox invoice `INV2-B3FK-HN9M-UZDV-3W6Y` and sent it (SENT), blocked a poisoned Invoice Intake, and verified the hash chain (`ok: true`). The v3 demo recording, also against the live URL, created and captured sandbox order `6EP281419N641845E` (capture `22233677FR8284502`, COMPLETED) and created invoice `INV2-B2VG-KXP8-DM37-8ZVH` (DRAFT). The suite covers policy decisions, Invoice Intake, dry-run, the hash chain, and approval-token failures (missing, replayed, expired, wrong content).
 
-Limits to be honest about: the product catalog is a built-in list, the injection detector is phrase-based, and until Upstash Redis is connected the Vercel deploy stores data in `/tmp` on the serverless instance.
+Limits to be honest about: the product catalog is a built-in list, and the injection detector is phrase-based.
 
 ### Design
 
@@ -67,7 +67,7 @@ Policy firewalls for agent spend are a crowded idea. What SpendGuard adds, and n
 
 ### Presentation
 
-The 2:47 video opens with the problem and the two sourced facts, pitches the novelty up front, then walks policy → hold → 403 → approve → real sandbox order → blocked gift card → prompt injection (labelled only when that decision is on screen) → Bill / Invoicing v2 → Invoice Intake → hash-chain verify, and closes against the five criteria. Captions are driven from the recording timeline and were checked against extracted frames. The sandbox buyer email is hidden on the PayPal login screen. The gift-card block is captioned as a blocked purchase, not as prompt injection.
+The 2:50 video was recorded against the live Vercel URL. It opens with the problem and the two sourced facts, pitches the novelty up front, then walks policy → hold → 403 → approve → real sandbox order → PayPal buyer approval → capture COMPLETED → blocked gift card → prompt injection (labelled only when that decision is on screen) → Bill / Invoicing v2 → Invoice Intake → hash-chain verify, and closes against the five criteria. Captions were remuxed from a visual check of the recording timeline, not from fixed offsets. The sandbox buyer email is hidden on the PayPal login screen. The gift-card block is captioned as a blocked purchase, not as prompt injection.
 
 ## Built with
 
